@@ -1,0 +1,568 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>ARI Client Walk-Through Punch List</title>
+  <style>
+    :root{
+      --max: 980px;
+      --bg: #f5f7fb;
+      --card: #ffffff;
+      --text: #111;
+      --muted: #5b6475;
+      --border: #d8deea;
+      --shadow: 0 10px 24px rgba(0,0,0,.08);
+      --radius: 14px;
+      --pad: 16px;
+    }
+    * { box-sizing: border-box; }
+    body { margin:0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; background: var(--bg); color: var(--text); }
+    header { background:#111; color:#fff; padding: 14px 16px; }
+    header .wrap { max-width: var(--max); margin: 0 auto; display:flex; align-items:center; justify-content:space-between; gap:12px; }
+    header h1 { margin:0; font-size: 16px; font-weight: 800; letter-spacing: .2px; }
+    header .sub { font-size: 12px; color: #cfd6e6; }
+
+    main { max-width: var(--max); margin: 16px auto 44px; padding: 0 16px; }
+    .card { background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow); padding: var(--pad); }
+    .top-actions { display:flex; gap:10px; flex-wrap: wrap; align-items:center; justify-content:flex-end; }
+    button {
+      border: 0; border-radius: 12px; padding: 12px 14px;
+      font-weight: 800; cursor: pointer; font-size: 14px;
+      touch-action: manipulation;
+    }
+    .primary { background:#2b6cff; color:#fff; }
+    .ghost { background:#eef2ff; color:#1f2d67; }
+    .danger { background:#ffe9e9; color:#7a1b1b; }
+    .muted { color: var(--muted); font-size: 12px; }
+    .status { margin-top: 10px; font-size: 12px; color:#2d6a2d; }
+
+    .grid { display:grid; grid-template-columns: repeat(12, 1fr); gap: 12px; }
+    .field { display:flex; flex-direction:column; gap: 6px; }
+    label { font-size: 12px; font-weight: 800; color:#2a3446; }
+    input[type="text"], input[type="date"], select {
+      width: 100%; padding: 12px 12px; border: 1px solid var(--border);
+      border-radius: 12px; font-size: 16px; background:#fff;
+    }
+
+    .section { margin-top: 16px; border-top: 1px solid #e8ecf5; padding-top: 14px; }
+    .section h2 { margin:0 0 8px; font-size: 15px; }
+    .checks { display:grid; grid-template-columns: 1fr; gap: 10px; }
+    .check {
+      display:flex; gap: 10px; align-items:flex-start;
+      padding: 10px 12px; border: 1px solid #eef1f8; border-radius: 12px;
+      background:#fbfcff;
+    }
+    .check input { width: 22px; height: 22px; margin-top: 2px; }
+    .check span { font-size: 14px; line-height: 1.25; }
+
+    .pillrow { display:flex; gap: 10px; flex-wrap: wrap; align-items:center; justify-content:space-between; }
+    .pill { font-size: 12px; color:#22305c; background:#eef2ff; padding: 6px 10px; border-radius: 999px; }
+
+    table { width:100%; border-collapse: collapse; margin-top: 8px; }
+    th, td { border: 1px solid var(--border); padding: 8px; vertical-align: top; }
+    th { background:#f3f6ff; font-size: 12px; text-align:left; }
+    td input[type="text"], td input[type="date"] { font-size: 14px; padding: 10px; border-radius: 10px; }
+    td .tiny { width: 22px; height: 22px; }
+
+    .ack { margin-top: 14px; padding: 12px; border: 1px solid #eef1f8; border-radius: 12px; background:#fbfcff; }
+    .siggrid { display:grid; grid-template-columns: 1fr 220px; gap: 12px; margin-top: 10px; }
+
+    .no-print { }
+    .print-title { display:none; }
+
+    /* Print/PDF styling */
+    @media print {
+      body { background:#fff; }
+      header, .no-print { display:none !important; }
+      main { margin:0; padding:0; max-width:none; }
+      .card { box-shadow:none; border-radius:0; padding:0; }
+      .print-title { display:block; margin-bottom: 10px; }
+      .print-title h1 { font-size: 18px; margin: 0; }
+      .print-title .meta { margin-top: 6px; font-size: 12px; color:#333; }
+      .check { background: transparent; border: none; padding: 2px 0; }
+      .check input { width: 14px; height: 14px; margin-top: 3px; }
+      input[type="text"], input[type="date"], select { border: none; padding: 0; font-size: 12px; }
+      td input[type="text"], td input[type="date"] { border: none; padding: 0; font-size: 12px; }
+      th, td { padding: 6px; }
+      .section { border-top: 1px solid #ddd; padding-top: 10px; }
+      .siggrid { grid-template-columns: 1fr 200px; }
+    }
+  </style>
+</head>
+<body>
+<header class="no-print">
+  <div class="wrap">
+    <div>
+      <h1>ARI Client Walk-Through Punch List</h1>
+      <div class="sub">Client walk-through at Substantial Completion • Contract scope & quality items only</div>
+    </div>
+    <div class="top-actions">
+      <button class="primary" id="exportPdf">Export PDF</button>
+      <button class="ghost" id="saveNow">Save</button>
+      <button class="ghost" id="newForm">New Form</button>
+      <select id="loadSaved" aria-label="Load saved form"></select>
+      <button class="danger" id="deleteSaved">Delete Saved</button>
+    </div>
+  </div>
+</header>
+
+<main>
+  <div class="card">
+    <div class="print-title">
+      <h1>ARI Client Walk-Through Punch List (Standard Form)</h1>
+      <div class="meta" id="printMeta"></div>
+    </div>
+
+    <div class="pillrow no-print">
+      <div class="pill">Autosaves on this device</div>
+      <div class="muted">Tip: On iPad you can “Add to Home Screen” for a one-tap app icon.</div>
+    </div>
+
+    <!-- Header Fields -->
+    <div class="grid" style="margin-top:12px;">
+      <div class="field" style="grid-column: span 6;">
+        <label for="project">Project</label>
+        <input id="project" type="text" placeholder="Project name / number" />
+      </div>
+      <div class="field" style="grid-column: span 6;">
+        <label for="client">Client</label>
+        <input id="client" type="text" placeholder="Client name" />
+      </div>
+      <div class="field" style="grid-column: span 4;">
+        <label for="date">Date</label>
+        <input id="date" type="date" />
+      </div>
+      <div class="field" style="grid-column: span 8;">
+        <label for="cmceqm">CM/CE &amp; QM</label>
+        <input id="cmceqm" type="text" placeholder="Name(s)" />
+      </div>
+    </div>
+
+    <!-- Checklist Sections -->
+    <div class="section">
+      <h2>General / Whole Project</h2>
+      <div class="checks" id="sec_general"></div>
+    </div>
+
+    <div class="section">
+      <h2>Kitchen (if applicable)</h2>
+      <div class="checks" id="sec_kitchen"></div>
+    </div>
+
+    <div class="section">
+      <h2>Bathrooms (if applicable)</h2>
+      <div class="checks" id="sec_bath"></div>
+    </div>
+
+    <div class="section">
+      <h2>Electrical</h2>
+      <div class="checks" id="sec_elec"></div>
+    </div>
+
+    <div class="section">
+      <h2>Plumbing</h2>
+      <div class="checks" id="sec_plumb"></div>
+    </div>
+
+    <div class="section">
+      <h2>HVAC (if applicable)</h2>
+      <div class="checks" id="sec_hvac"></div>
+    </div>
+
+    <div class="section">
+      <h2>Windows / Exterior Work (if applicable)</h2>
+      <div class="checks" id="sec_ext"></div>
+    </div>
+
+    <div class="section">
+      <h2>Safety &amp; Code</h2>
+      <div class="checks" id="sec_safety"></div>
+    </div>
+
+    <!-- Punch List -->
+    <div class="section">
+      <h2>Punch List Items</h2>
+      <div class="muted">Items identified here are limited to contract scope and quality issues (not new scope).</div>
+      <div style="overflow:auto; margin-top:10px;">
+        <table>
+          <thead>
+            <tr>
+              <th style="width:48px;">#</th>
+              <th>Location</th>
+              <th>Description</th>
+              <th style="width:180px;">Responsible</th>
+              <th style="width:160px;">Target Date</th>
+              <th style="width:110px;">Complete</th>
+            </tr>
+          </thead>
+          <tbody id="punchBody"></tbody>
+        </table>
+      </div>
+      <div class="muted no-print" style="margin-top:8px;">Note: 20 rows are provided (matches the standard form).</div>
+    </div>
+
+    <!-- Acknowledgment -->
+    <div class="section">
+      <h2>Client Acknowledgment</h2>
+      <div class="ack">
+        I acknowledge the above items constitute the agreed punch list and do not include additional scope.
+        <div class="siggrid">
+          <div class="field">
+            <label for="clientSig">Client Signature</label>
+            <input id="clientSig" type="text" placeholder="Type name (or leave blank and sign on paper after printing)" />
+          </div>
+          <div class="field">
+            <label for="clientSigDate">Date</label>
+            <input id="clientSigDate" type="date" />
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="status no-print" id="status"></div>
+  </div>
+</main>
+
+<script>
+  // --------- Config from uploaded standard form ---------
+  const CHECKLIST = {
+    sec_general: [
+      "Floors clean and undamaged",
+      "Walls and ceilings free of visible defects",
+      "Trim complete, secure, and painted",
+      "Doors and windows operate properly",
+      "Hardware installed and aligned",
+      "No visible damage from construction",
+    ],
+    sec_kitchen: [
+      "Cabinets installed level and secure",
+      "Doors/drawers aligned and functioning",
+      "Countertops installed correctly",
+      "Backsplash complete and clean",
+      "Sink and faucet installed, no leaks",
+      "Appliances installed and operational",
+    ],
+    sec_bath: [
+      "Tile installed evenly, grout consistent",
+      "Fixtures secure and operational",
+      "Toilets set properly, no leaks",
+      "Shower/tub drains correctly",
+      "Mirrors and accessories installed",
+    ],
+    sec_elec: [
+      "All fixtures installed per plan",
+      "Switches and outlets secure",
+      "GFCI/AFCI functioning",
+      "Lighting controls operate correctly",
+    ],
+    sec_plumb: [
+      "Fixtures operate properly",
+      "No visible leaks",
+      "Hot/cold orientation correct",
+      "Drainage functioning",
+    ],
+    sec_hvac: [
+      "Registers installed and secure",
+      "System operational",
+      "Thermostat functioning",
+    ],
+    sec_ext: [
+      "Windows and doors sealed and operating",
+      "Exterior finishes complete",
+      "No visible gaps or damage",
+    ],
+    sec_safety: [
+      "Smoke/CO detectors installed",
+      "Handrails secure",
+      "Guardrails compliant",
+    ]
+  };
+
+  const $ = (id) => document.getElementById(id);
+
+  // --------- Storage ---------
+  function todayISO(){
+    const d = new Date();
+    const tz = d.getTimezoneOffset() * 60000;
+    return new Date(d - tz).toISOString().slice(0,10);
+  }
+  function keyFor(name){ return `ariWalkthrough:${name}`; }
+
+  function getFormName(){
+    const p = $("project").value.trim();
+    const c = $("client").value.trim();
+    const d = $("date").value || todayISO();
+    const safe = (s)=> s.replace(/[^a-z0-9 _-]/gi,"").trim().slice(0,40);
+    const base = [safe(p)||"Project", safe(c)||"Client", d].join(" - ");
+    return base;
+  }
+
+  function collect(){
+    const data = {
+      project: $("project").value,
+      client: $("client").value,
+      date: $("date").value,
+      cmceqm: $("cmceqm").value,
+      clientSig: $("clientSig").value,
+      clientSigDate: $("clientSigDate").value,
+      checks: {},
+      punch: []
+    };
+
+    // checks
+    for (const secId of Object.keys(CHECKLIST)){
+      data.checks[secId] = [];
+      const boxes = document.querySelectorAll(`#${secId} input[type="checkbox"]`);
+      boxes.forEach((b)=> data.checks[secId].push(!!b.checked));
+    }
+
+    // punch rows
+    const rows = document.querySelectorAll("#punchBody tr");
+    rows.forEach((tr)=>{
+      const inputs = tr.querySelectorAll("input, textarea");
+      const row = {
+        location: inputs[0].value,
+        desc: inputs[1].value,
+        resp: inputs[2].value,
+        target: inputs[3].value,
+        complete: inputs[4].checked
+      };
+      data.punch.push(row);
+    });
+
+    return data;
+  }
+
+  function apply(data){
+    $("project").value = data?.project ?? "";
+    $("client").value = data?.client ?? "";
+    $("date").value = data?.date ?? "";
+    $("cmceqm").value = data?.cmceqm ?? "";
+    $("clientSig").value = data?.clientSig ?? "";
+    $("clientSigDate").value = data?.clientSigDate ?? "";
+
+    // checks
+    for (const secId of Object.keys(CHECKLIST)){
+      const boxes = document.querySelectorAll(`#${secId} input[type="checkbox"]`);
+      boxes.forEach((b, i)=> b.checked = !!data?.checks?.[secId]?.[i]);
+    }
+
+    // punch
+    const rows = data?.punch ?? [];
+    const trs = document.querySelectorAll("#punchBody tr");
+    trs.forEach((tr, idx)=>{
+      const inputs = tr.querySelectorAll("input, textarea");
+      const r = rows[idx] || {};
+      inputs[0].value = r.location ?? "";
+      inputs[1].value = r.desc ?? "";
+      inputs[2].value = r.resp ?? "";
+      inputs[3].value = r.target ?? "";
+      inputs[4].checked = !!r.complete;
+    });
+
+    updatePrintMeta();
+  }
+
+  function save(nameOverride=null){
+    const name = nameOverride ?? getFormName();
+    const data = collect();
+    localStorage.setItem(keyFor(name), JSON.stringify(data));
+    refreshSavedDropdown();
+    setStatus(`Saved ✓ (${new Date().toLocaleTimeString()})`);
+    return name;
+  }
+
+  function load(name){
+    const raw = localStorage.getItem(keyFor(name));
+    if (!raw) return false;
+    try{
+      const data = JSON.parse(raw);
+      apply(data);
+      setStatus(`Loaded ✓ (${name})`);
+      return true;
+    }catch{
+      setStatus("Could not load saved form (corrupt data).", true);
+      return false;
+    }
+  }
+
+  function deleteSaved(name){
+    localStorage.removeItem(keyFor(name));
+    refreshSavedDropdown();
+    setStatus(`Deleted saved form: ${name}`, false);
+  }
+
+  function listSaved(){
+    const out = [];
+    for (let i=0; i<localStorage.length; i++){
+      const k = localStorage.key(i);
+      if (k && k.startsWith("ariWalkthrough:")){
+        out.push(k.replace("ariWalkthrough:",""));
+      }
+    }
+    out.sort((a,b)=> b.localeCompare(a));
+    return out;
+  }
+
+  // --------- UI ---------
+  function setStatus(msg, ok=true){
+    const el = $("status");
+    el.textContent = msg;
+    el.style.color = ok ? "#2d6a2d" : "#8a1f1f";
+  }
+
+  function renderChecklist(){
+    for (const [secId, items] of Object.entries(CHECKLIST)){
+      const host = $(secId);
+      host.innerHTML = "";
+      items.forEach((txt, idx)=>{
+        const wrap = document.createElement("label");
+        wrap.className = "check";
+        wrap.innerHTML = `
+          <input type="checkbox" data-sec="${secId}" data-idx="${idx}" />
+          <span>${txt}</span>
+        `;
+        host.appendChild(wrap);
+      });
+    }
+  }
+
+  function renderPunchRows(){
+    const body = $("punchBody");
+    body.innerHTML = "";
+    for (let i=1; i<=20; i++){
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td style="text-align:center; font-weight:800;">${i}</td>
+        <td><input type="text" placeholder="Room / area" /></td>
+        <td><input type="text" placeholder="Issue / description" /></td>
+        <td><input type="text" placeholder="Trade / person" /></td>
+        <td><input type="date" /></td>
+        <td style="text-align:center;"><input class="tiny" type="checkbox" /></td>
+      `;
+      body.appendChild(tr);
+    }
+  }
+
+  function refreshSavedDropdown(){
+    const sel = $("loadSaved");
+    const items = listSaved();
+    sel.innerHTML = "";
+    const opt0 = document.createElement("option");
+    opt0.value = "";
+    opt0.textContent = items.length ? "Load saved…" : "No saved forms";
+    sel.appendChild(opt0);
+    sel.disabled = !items.length;
+
+    items.forEach((name)=>{
+      const opt = document.createElement("option");
+      opt.value = name;
+      opt.textContent = name;
+      sel.appendChild(opt);
+    });
+  }
+
+  function updatePrintMeta(){
+    const meta = [];
+    const p = $("project").value.trim();
+    const c = $("client").value.trim();
+    const d = $("date").value.trim();
+    const q = $("cmceqm").value.trim();
+    if (p) meta.push(`Project: ${p}`);
+    if (c) meta.push(`Client: ${c}`);
+    if (d) meta.push(`Date: ${d}`);
+    if (q) meta.push(`CM/CE & QM: ${q}`);
+    $("printMeta").textContent = meta.join(" • ");
+    if (d && c) document.title = `Punch List - ${c} - ${d}`;
+  }
+
+  // Autosave (debounced)
+  let t = null;
+  function scheduleAutosave(){
+    clearTimeout(t);
+    t = setTimeout(()=>{
+      save("__AUTOSAVE__");
+    }, 500);
+  }
+
+  function wireAutosave(){
+    const inputs = document.querySelectorAll("input, select, textarea");
+    inputs.forEach((el)=>{
+      el.addEventListener("input", ()=>{
+        updatePrintMeta();
+        scheduleAutosave();
+      });
+      el.addEventListener("change", ()=>{
+        updatePrintMeta();
+        scheduleAutosave();
+      });
+    });
+  }
+
+  // --------- Export PDF ---------
+  function exportPdf(){
+    // Save a named copy too (so it’s easy to find later)
+    save(getFormName());
+    updatePrintMeta();
+
+    // Print dialog → Save as PDF
+    setStatus("Opening print dialog… choose “Save to Files” / “Save as PDF”.");
+    setTimeout(()=> window.print(), 50);
+  }
+
+  // --------- Init ---------
+  (function init(){
+    renderChecklist();
+    renderPunchRows();
+    refreshSavedDropdown();
+
+    // Default date = today
+    $("date").value = todayISO();
+
+    // Load autosave if exists
+    if (!load("__AUTOSAVE__")){
+      setStatus("Ready. Start the walk-through — it will autosave on this device.");
+      updatePrintMeta();
+    }
+
+    wireAutosave();
+
+    $("exportPdf").addEventListener("click", exportPdf);
+
+    $("saveNow").addEventListener("click", ()=>{
+      save(getFormName());
+    });
+
+    $("newForm").addEventListener("click", ()=>{
+      if (confirm("Start a new blank form? (Current values will remain saved via autosave.)")){
+        apply({
+          project:"", client:"", date: todayISO(), cmceqm:"",
+          clientSig:"", clientSigDate:"",
+          checks: {}, punch: []
+        });
+        setStatus("New blank form started.");
+        save("__AUTOSAVE__");
+      }
+    });
+
+    $("loadSaved").addEventListener("change", (e)=>{
+      const name = e.target.value;
+      if (!name) return;
+      load(name);
+      e.target.value = "";
+    });
+
+    $("deleteSaved").addEventListener("click", ()=>{
+      const items = listSaved().filter(n => n !== "__AUTOSAVE__");
+      if (!items.length) return setStatus("No saved forms to delete.", false);
+      const name = prompt("Type the exact saved form name to delete (or cancel):\n\n" + items.slice(0,10).join("\n") + (items.length>10 ? "\n…" : ""));
+      if (!name) return;
+      if (!localStorage.getItem(keyFor(name))) return setStatus("That saved form name was not found.", false);
+      if (confirm(`Delete "${name}"? This cannot be undone.`)) deleteSaved(name);
+    });
+
+  })();
+</script>
+</body>
+</html>
